@@ -9,20 +9,17 @@ st.set_page_config(page_title="Python File Converter", page_icon="🔄", layout=
 st.title("🔄 Python File Converter")
 st.write("Easily convert, resize, and compress your files to specific target sizes!")
 
-# Sidebar navigation
 conversion_type = st.sidebar.selectbox(
     "Select Conversion Type",
     ["Image Converter", "Data Converter (CSV/JSON/Excel)"],
 )
 
-# Helper function to get clean text for file sizes
 def format_size(bytes_count):
     kb = bytes_count / 1024
     if kb < 1024:
         return f"{kb:.2f} KB"
     return f"{(kb / 1024):.2f} MB"
 
-# --- IMAGE CONVERTER ---
 if conversion_type == "Image Converter":
   st.header("🖼️ Image Converter")
   uploaded_image = st.file_uploader(
@@ -30,7 +27,6 @@ if conversion_type == "Image Converter":
   )
 
   if uploaded_image is not None:
-    # Read the original file's raw byte array to get accurate file size
     og_bytes = uploaded_image.getvalue()
     og_size_str = format_size(len(og_bytes))
     
@@ -43,7 +39,6 @@ if conversion_type == "Image Converter":
 
     st.subheader("Adjustment Options")
     
-    # 1. Dimension Resizing
     enable_resize = st.checkbox("Resize Image Dimensions")
     new_width, new_height = image.size
     if enable_resize:
@@ -53,7 +48,6 @@ if conversion_type == "Image Converter":
         with col2:
             new_height = st.number_input("Height (pixels)", min_value=1, value=image.size[1])
 
-    # 2. Target File Size Optimization
     st.markdown("**File Size Target Control**")
     enable_target_size = st.checkbox("Set a Maximum Target File Size limit (JPEG/WEBP only)")
     
@@ -77,12 +71,10 @@ if conversion_type == "Image Converter":
       if target_format == "JPEG" and image.mode in ("RGBA", "P"):
         image = image.convert("RGB")
 
-      # Dynamic Compression Routine to hit user targets
       byte_data = b""
       final_quality = 85
       
       if enable_target_size and save_format in ["JPEG", "WEBP"]:
-          # Loop backwards to find the highest quality that fits under the target KB size limit
           for q in range(100, 4, -5):
               buffer = io.BytesIO()
               image.save(buffer, format=save_format, quality=q)
@@ -91,11 +83,9 @@ if conversion_type == "Image Converter":
               
               byte_data = test_data
               final_quality = q
-              # Break out of loop once it falls safely under their entry threshold
               if test_size_kb <= target_size_kb:
                   break
       else:
-          # Default format compilation route if constraint isn't active or applicable
           buffer = io.BytesIO()
           if save_format in ["JPEG", "WEBP"]:
               image.save(buffer, format=save_format, quality=85)
@@ -116,7 +106,6 @@ if conversion_type == "Image Converter":
           mime=f"image/{target_format.lower()}",
       )
 
-# --- DATA CONVERTER ---
 elif conversion_type == "Data Converter (CSV/JSON/Excel)":
   st.header("📊 Data File Converter")
   uploaded_file = st.file_uploader(
@@ -124,14 +113,12 @@ elif conversion_type == "Data Converter (CSV/JSON/Excel)":
   )
 
   if uploaded_file is not None:
-    # Read raw content metrics directly from the input buffer stream
     og_bytes = uploaded_file.getvalue()
     og_size_str = format_size(len(og_bytes))
     
     file_extension = uploaded_file.name.split(".")[-1].lower()
 
     try:
-      # Reset file read pointer after raw calculation
       uploaded_file.seek(0)
       if file_extension == "csv":
         df = pd.read_csv(uploaded_file)
@@ -145,13 +132,11 @@ elif conversion_type == "Data Converter (CSV/JSON/Excel)":
 
       st.subheader("Data Optimization Options")
       
-      # Row truncation configuration options
       enable_row_limit = st.checkbox("Limit maximum number of rows (Drastically drops file size)")
       if enable_row_limit:
           max_rows = st.number_input("Max rows to retain", min_value=1, max_value=len(df), value=min(1000, len(df)))
           df = df.iloc[:int(max_rows)]
 
-      # Gzip structural compression configuration parameters
       compress_data = st.checkbox("Compress output file into GZIP format archive")
 
       target_data_format = st.selectbox(
